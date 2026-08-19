@@ -1,0 +1,45 @@
+# Audit Trail — Design
+
+## Purpose
+Provide a tamper-evident, immutable record of changes to tree data, so
+any edit can be traced to who made it, when, and what changed.
+
+## AuditLog entry structure
+- id             (unique identifier)
+- tree_id        (which tree record changed)
+- user_id        (who made the change)
+- field_changed  (e.g. "location", "health_status")
+- old_value
+- new_value
+- timestamp
+- action_type    (CREATE / UPDATE / VERIFY / FLAG)
+- flagged        (boolean - did this change trigger a review?)
+
+## Core principle
+Every change produces a new, immutable log entry rather than overwriting
+history. The tree record shows the current state; the audit log shows
+how it got there.
+
+## Flagging logic
+
+Sensitive fields (any change auto-flags for review):
+- GPS coordinates (location)
+- Verification status
+- Species
+
+Non-sensitive fields (logged, not auto-flagged):
+- Health status (expected to change naturally over time)
+- Growth measurements
+- Photos
+
+Rationale: logging everything is necessary but not sufficient - flagging
+only sensitive-field changes avoids alert fatigue while still catching
+the changes most likely to indicate error or tampering (e.g. a tree's
+location silently moving from Machakos to Nairobi).
+
+## Example event
+
+## Explicit distinction
+This audit/flagging system is a **proposed enhancement**. TreePassport's
+existing platform is not known to include this level of change tracking;
+this design demonstrates how it could be added.
