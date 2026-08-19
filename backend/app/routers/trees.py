@@ -32,3 +32,32 @@ def get_tree(tree_id: int, db: Session = Depends(get_db)):
     if not tree:
         raise HTTPException(status_code=404, detail="Tree not found")
     return tree
+
+
+@router.patch("/{tree_id}", response_model=schemas.TreeOut)
+def update_tree(
+    tree_id: int,
+    updates: schemas.TreeUpdate,
+    db: Session = Depends(get_db),
+    user_id: int | None = None,  # placeholder until auth is added
+):
+    from app.audit import log_change
+
+    tree = db.query(models.Tree).filter(models.Tree.id == tree_id).first()
+    if not tree:
+        raise HTTPException(status_code=404, detail="Tree not found")
+
+    update_data = updates.model_dump(exclude_unset=True)
+    flagged_fields = []
+
+    for field, new_value in update_data.items():
+        old_value = getattr(tree, field)
+        if old_value != new_value:
+            entry = log_change(db, tree_id, user_id, field, old_value, new_value)
+            if entry.flagged:
+                flagged_fields.append(field)
+            setattr(tree, field, new_value)
+
+    db.commit()
+    db.refresh(tree)
+    return tree
