@@ -39,7 +39,16 @@ location silently moving from Machakos to Nairobi).
 
 ## Example event
 
+    Location changed
+    User: Field Officer 04
+    Tree ID: TP-KEN-2026-000123
+    Previous: Machakos
+    New: Makueni
+    Time: 2026-08-19 14:32
+    Action: UPDATE
+    Flagged: TRUE (sensitive field)
+
 ## Explicit distinction
-This audit/flagging system is a **proposed enhancement**. TreePassport's
+This audit/flagging system is a proposed enhancement. TreePassport's
 existing platform is not known to include this level of change tracking;
 this design demonstrates how it could be added.
