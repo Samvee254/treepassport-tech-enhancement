@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 from app.database import Base, engine
-from app.routers import trees
+from app.routers import trees, monitoring, risk
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="TreePassport Technology Enhancement API")
 
 app.include_router(trees.router)
+app.include_router(monitoring.router)
+app.include_router(risk.router)
 
 
 @app.get("/health")
