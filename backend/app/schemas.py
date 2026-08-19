@@ -54,3 +54,30 @@ class MonitoringRecordOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UserCreate(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: str = "field_officer"
+
+
+class UserOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    role: str
+
+    class Config:
+        from_attributes = True
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

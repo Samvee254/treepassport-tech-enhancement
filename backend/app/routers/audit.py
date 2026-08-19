@@ -21,6 +21,7 @@ def get_audit_log(tree_id: int, db: Session = Depends(get_db)):
     return [
         {
             "id": l.id,
+            "user_id": l.user_id,
             "field_changed": l.field_changed,
             "old_value": l.old_value,
             "new_value": l.new_value,
