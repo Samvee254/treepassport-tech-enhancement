@@ -63,3 +63,19 @@ environmental data (rainfall, temperature) if available.
 This scoring engine is a proposed enhancement. Nothing here claims
 TreePassport already performs risk scoring - it is our addition on top
 of the existing monitoring data model.
+
+## Revision: bucket edge case (found during testing)
+
+Testing revealed that a fresh decline (healthy -> moderate) could score
+as low as 30, landing in the original LOW bucket despite representing
+an active, recent health decline. Two adjustments were made:
+
+1. Retuned thresholds:
+   - 0-20   -> LOW    -> Healthy
+   - 21-55  -> MEDIUM -> Watch
+   - 56-100 -> HIGH   -> At Risk
+
+2. Decline override: if the latest check-in shows a health status
+   decline versus the previous check-in, the bucket is floored at
+   MEDIUM regardless of numeric score. A raw score should never mask
+   an active decline.
