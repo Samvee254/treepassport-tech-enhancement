@@ -31,3 +31,7 @@ build/
 
 # Generated QR code images (test artifacts, not source)
 backend/*.png
+
+# pytest test database
+backend/test_treepassport.db
+backend/.pytest_cache/
