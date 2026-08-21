@@ -13,11 +13,51 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-size: 14px;
   }
   .legend span { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+  .filters {
+    position: absolute; top: 10px; left: 50px; z-index: 1000;
+    background: white; padding: 10px 14px; border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-size: 14px;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .filters select, .filters button {
+    padding: 4px 8px; font-size: 13px;
+  }
+  .filters button {
+    cursor: pointer; background: #2ecc71; color: white; border: none; border-radius: 4px;
+  }
+  .count-badge {
+    font-size: 12px; color: #555;
+  }
 </style>
 </head>
 <body>
 
 <div id="map"></div>
+
+<div class="filters">
+  <label>County:
+    <select id="countyFilter"><option value="">All</option></select>
+  </label>
+  <label>Health status:
+    <select id="healthFilter">
+      <option value="">All</option>
+      <option value="healthy">Healthy</option>
+      <option value="moderate">Moderate</option>
+      <option value="at_risk">At Risk</option>
+    </select>
+  </label>
+  <label>Verification:
+    <select id="verificationFilter">
+      <option value="">All</option>
+      <option value="verified">Verified</option>
+      <option value="pending">Pending</option>
+    </select>
+  </label>
+  <button onclick="applyFilters()">Apply</button>
+  <button onclick="resetFilters()" style="background:#95a5a6;">Reset</button>
+  <span class="count-badge" id="countBadge"></span>
+</div>
+
 <div class="legend">
   <div><span style="background:#2ecc71"></span>Healthy</div>
   <div><span style="background:#f1c40f"></span>Moderate / Watch</div>
@@ -29,11 +69,14 @@
 <script>
 const API_BASE = "http://127.0.0.1:8000";
 
-const map = L.map('map').setView([-1.2, 37.0], 7); // roughly central Kenya
+const map = L.map('map').setView([-1.2, 37.0], 7);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
+
+let allTrees = [];
+let markers = [];
 
 function colorFor(status) {
   switch (status) {
@@ -44,43 +87,90 @@ function colorFor(status) {
   }
 }
 
+function clearMarkers() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+}
+
+function renderTrees(trees) {
+  clearMarkers();
+  const bounds = [];
+
+  trees.forEach(tree => {
+    if (tree.gps_lat == null || tree.gps_lng == null) return;
+
+    const marker = L.circleMarker([tree.gps_lat, tree.gps_lng], {
+      radius: 9,
+      color: '#333',
+      weight: 1,
+      fillColor: colorFor(tree.current_health_status),
+      fillOpacity: 0.9
+    }).addTo(map);
+
+    marker.bindPopup(`
+      <strong>${tree.tree_code}</strong><br>
+      County: ${tree.county || 'Unknown'}<br>
+      Status: ${tree.verification_status}<br>
+      Health: ${tree.current_health_status}<br>
+      <a href="#" onclick="showRisk(${tree.id}); return false;">View risk score</a>
+    `);
+
+    markers.push(marker);
+    bounds.push([tree.gps_lat, tree.gps_lng]);
+  });
+
+  document.getElementById('countBadge').textContent = `${trees.length} tree(s) shown`;
+
+  if (bounds.length > 0) {
+    map.fitBounds(bounds, { padding: [40, 40] });
+  }
+}
+
+function populateCountyFilter(trees) {
+  const select = document.getElementById('countyFilter');
+  const counties = [...new Set(trees.map(t => t.county).filter(Boolean))].sort();
+  counties.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    select.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  const county = document.getElementById('countyFilter').value;
+  const health = document.getElementById('healthFilter').value;
+  const verification = document.getElementById('verificationFilter').value;
+
+  const filtered = allTrees.filter(t => {
+    if (county && t.county !== county) return false;
+    if (health && t.current_health_status !== health) return false;
+    if (verification && t.verification_status !== verification) return false;
+    return true;
+  });
+
+  renderTrees(filtered);
+}
+
+function resetFilters() {
+  document.getElementById('countyFilter').value = '';
+  document.getElementById('healthFilter').value = '';
+  document.getElementById('verificationFilter').value = '';
+  renderTrees(allTrees);
+}
+
 async function loadTrees() {
   try {
     const res = await fetch(`${API_BASE}/trees`);
-    const trees = await res.json();
+    allTrees = await res.json();
 
-    if (trees.length === 0) {
+    if (allTrees.length === 0) {
       console.log("No trees found - register a tree via the API first.");
       return;
     }
 
-    const bounds = [];
-
-    trees.forEach(tree => {
-      if (tree.gps_lat == null || tree.gps_lng == null) return;
-
-      const marker = L.circleMarker([tree.gps_lat, tree.gps_lng], {
-        radius: 9,
-        color: '#333',
-        weight: 1,
-        fillColor: colorFor(tree.current_health_status),
-        fillOpacity: 0.9
-      }).addTo(map);
-
-      marker.bindPopup(`
-        <strong>${tree.tree_code}</strong><br>
-        County: ${tree.county || 'Unknown'}<br>
-        Status: ${tree.verification_status}<br>
-        Health: ${tree.current_health_status}<br>
-        <a href="#" onclick="showRisk(${tree.id}); return false;">View risk score</a>
-      `);
-
-      bounds.push([tree.gps_lat, tree.gps_lng]);
-    });
-
-    if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [40, 40] });
-    }
+    populateCountyFilter(allTrees);
+    renderTrees(allTrees);
   } catch (err) {
     console.error("Failed to load trees:", err);
     alert("Could not reach the API. Is the backend running at " + API_BASE + "?");
