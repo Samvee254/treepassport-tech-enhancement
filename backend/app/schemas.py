@@ -81,3 +81,19 @@ class LoginRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class SpeciesCreate(BaseModel):
+    common_name: str
+    scientific_name: Optional[str] = None
+    expected_growth_rate_cm_per_month: float
+
+
+class SpeciesOut(BaseModel):
+    id: int
+    common_name: str
+    scientific_name: Optional[str]
+    expected_growth_rate_cm_per_month: float
+
+    class Config:
+        from_attributes = True
