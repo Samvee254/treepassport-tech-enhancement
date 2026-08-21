@@ -112,7 +112,8 @@ function renderTrees(trees) {
       County: ${tree.county || 'Unknown'}<br>
       Status: ${tree.verification_status}<br>
       Health: ${tree.current_health_status}<br>
-      <a href="#" onclick="showRisk(${tree.id}); return false;">View risk score</a>
+      <a href="#" onclick="showRisk(${tree.id}); return false;">View risk score</a><br>
+      <a href="${API_BASE}/trees/${tree.id}/qr" target="_blank">View QR tag</a>
     `);
 
     markers.push(marker);

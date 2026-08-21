@@ -19,6 +19,7 @@ pydantic==2.13.4
 pydantic_core==2.46.4
 python-jose==3.5.0
 python-multipart==0.0.32
+qrcode==8.2
 reportlab==5.0.1
 rsa==4.9.1
 six==1.17.0
