@@ -24,3 +24,7 @@ build/
 # Database
 *.db
 *.sqlite3
+
+# Generated report exports (test artifacts, not source)
+*.csv
+*.pdf
