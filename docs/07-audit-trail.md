@@ -52,3 +52,15 @@ location silently moving from Machakos to Nairobi).
 This audit/flagging system is a proposed enhancement. TreePassport's
 existing platform is not known to include this level of change tracking;
 this design demonstrates how it could be added.
+
+## Revision: bug found during testing (monitoring-record audit logging)
+
+When audit logging was added to monitoring-record creation, the first
+implementation used the newly-created record's own height as the
+"old_value" instead of the previous record's height - meaning old and
+new values were identical or misleading in the log. This was caught by
+testing the actual output rather than assuming the log was correct, and
+fixed by querying the previous monitoring record before inserting the
+new one. This is now correctly reflected in the audit log: old_value
+captures the tree's state before the check-in, new_value captures the
+state after.
