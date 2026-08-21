@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TreePassport Enhancement - Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  body { margin: 0; font-family: sans-serif; }
+  #map { height: 100vh; width: 100%; }
+  .legend {
+    position: absolute; top: 10px; right: 10px; z-index: 1000;
+    background: white; padding: 10px 14px; border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-size: 14px;
+  }
+  .legend span { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div class="legend">
+  <div><span style="background:#2ecc71"></span>Healthy</div>
+  <div><span style="background:#f1c40f"></span>Moderate / Watch</div>
+  <div><span style="background:#e74c3c"></span>At Risk</div>
+  <div><span style="background:#95a5a6"></span>Pending / Unknown</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+
+const map = L.map('map').setView([-1.2, 37.0], 7); // roughly central Kenya
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+function colorFor(status) {
+  switch (status) {
+    case 'healthy': return '#2ecc71';
+    case 'moderate': return '#f1c40f';
+    case 'at_risk': return '#e74c3c';
+    default: return '#95a5a6';
+  }
+}
+
+async function loadTrees() {
+  try {
+    const res = await fetch(`${API_BASE}/trees`);
+    const trees = await res.json();
+
+    if (trees.length === 0) {
+      console.log("No trees found - register a tree via the API first.");
+      return;
+    }
+
+    const bounds = [];
+
+    trees.forEach(tree => {
+      if (tree.gps_lat == null || tree.gps_lng == null) return;
+
+      const marker = L.circleMarker([tree.gps_lat, tree.gps_lng], {
+        radius: 9,
+        color: '#333',
+        weight: 1,
+        fillColor: colorFor(tree.current_health_status),
+        fillOpacity: 0.9
+      }).addTo(map);
+
+      marker.bindPopup(`
+        <strong>${tree.tree_code}</strong><br>
+        County: ${tree.county || 'Unknown'}<br>
+        Status: ${tree.verification_status}<br>
+        Health: ${tree.current_health_status}<br>
+        <a href="#" onclick="showRisk(${tree.id}); return false;">View risk score</a>
+      `);
+
+      bounds.push([tree.gps_lat, tree.gps_lng]);
+    });
+
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  } catch (err) {
+    console.error("Failed to load trees:", err);
+    alert("Could not reach the API. Is the backend running at " + API_BASE + "?");
+  }
+}
+
+async function showRisk(treeId) {
+  const res = await fetch(`${API_BASE}/trees/${treeId}/risk`);
+  const risk = await res.json();
+  alert(
+    `Tree ${risk.tree_code}\nRisk Score: ${risk.score} (${risk.bucket})\n` +
+    `Label: ${risk.label}\nRecommendation: ${risk.recommendation}`
+  );
+}
+
+loadTrees();
+</script>
+
+</body>
+</html>
