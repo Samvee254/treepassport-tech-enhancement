@@ -79,3 +79,19 @@ an active, recent health decline. Two adjustments were made:
    decline versus the previous check-in, the bucket is floored at
    MEDIUM regardless of numeric score. A raw score should never mask
    an active decline.
+
+## Note: raw health status vs. computed risk bucket
+
+These are two different signals and should not be conflated in reports:
+
+- health_status_* fields reflect the raw value from the most recent
+  monitoring check-in (a human's direct observation).
+- risk_engine_high_bucket_* reflects the Risk Engine's computed score,
+  which weighs recency, trend, and decline history - not just the
+  latest label. A tree marked "at_risk" in a single check-in with no
+  prior history may score MEDIUM (Watch), not HIGH, because there is
+  not yet enough evidence of a sustained decline.
+
+This was caught while building the reporting endpoint, where both
+numbers appeared side-by-side and looked inconsistent without this
+explanation.
