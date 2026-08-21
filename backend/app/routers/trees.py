@@ -2,13 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models, schemas
-from app.deps import get_current_user
+from app.deps import get_current_user, require_role
 
 router = APIRouter(prefix="/trees", tags=["trees"])
 
 
 @router.post("", response_model=schemas.TreeOut, status_code=201)
-def create_tree(tree: schemas.TreeCreate, db: Session = Depends(get_db)):
+def create_tree(
+    tree: schemas.TreeCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role("admin", "field_officer")),
+):
     existing = db.query(models.Tree).filter(
         models.Tree.tree_code == tree.tree_code
     ).first()
@@ -40,12 +44,9 @@ def update_tree(
     tree_id: int,
     updates: schemas.TreeUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role("admin", "field_officer")),
 ):
     from app.audit import log_change
-
-    if current_user.role not in ("admin", "field_officer"):
-        raise HTTPException(status_code=403, detail="Not authorized to update trees")
 
     tree = db.query(models.Tree).filter(models.Tree.id == tree_id).first()
     if not tree:

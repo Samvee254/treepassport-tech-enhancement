@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models, schemas
+from app.deps import require_role
 
 router = APIRouter(prefix="/trees", tags=["monitoring"])
 
@@ -15,6 +16,7 @@ def add_monitoring_record(
     tree_id: int,
     record: schemas.MonitoringRecordCreate,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role("admin", "field_officer")),
 ):
     tree = db.query(models.Tree).filter(models.Tree.id == tree_id).first()
     if not tree:

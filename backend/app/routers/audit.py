@@ -2,12 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models
+from app.deps import require_role
 
 router = APIRouter(prefix="/trees", tags=["audit"])
 
 
 @router.get("/{tree_id}/audit")
-def get_audit_log(tree_id: int, db: Session = Depends(get_db)):
+def get_audit_log(
+    tree_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role("admin", "field_officer")),
+):
     tree = db.query(models.Tree).filter(models.Tree.id == tree_id).first()
     if not tree:
         raise HTTPException(status_code=404, detail="Tree not found")

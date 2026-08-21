@@ -21,3 +21,14 @@ def get_current_user(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
+
+
+def require_role(*allowed_roles: str):
+    def checker(current_user: models.User = Depends(get_current_user)) -> models.User:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Role '{current_user.role}' not permitted for this action",
+            )
+        return current_user
+    return checker
