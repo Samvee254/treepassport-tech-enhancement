@@ -28,3 +28,6 @@ build/
 # Generated report exports (test artifacts, not source)
 *.csv
 *.pdf
+
+# Generated QR code images (test artifacts, not source)
+backend/*.png
