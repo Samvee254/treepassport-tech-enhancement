@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: treepassport-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+  - type: web
+    name: treepassport-frontend
+    runtime: static
+    staticPublishPath: ./frontend
+    plan: free
