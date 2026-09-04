@@ -95,3 +95,23 @@ These are two different signals and should not be conflated in reports:
 This was caught while building the reporting endpoint, where both
 numbers appeared side-by-side and looked inconsistent without this
 explanation.
+
+## Revision: w4 missing check-ins (previously a placeholder)
+
+w4 was originally stubbed at 0 points because no expected monitoring
+schedule was defined. This is now resolved:
+
+Expected cadence: one check-in every 30 days from planting_date.
+
+    expected_checkins = floor(days_since_planting / 30)
+    missing = max(expected_checkins - actual_checkin_count, 0)
+
+    w4 scoring:
+    - 0 missed  -> 0 pts
+    - 1 missed  -> 10 pts
+    - 2+ missed -> 15 pts
+
+Trees with no planting_date recorded cannot have this calculated
+(no baseline to measure against) - w4 defaults to 0 in that case,
+which is a known limitation, not a false "no risk" signal. This is
+noted in the breakdown output so it's never silently misleading.
