@@ -115,3 +115,15 @@ Trees with no planting_date recorded cannot have this calculated
 (no baseline to measure against) - w4 defaults to 0 in that case,
 which is a known limitation, not a false "no risk" signal. This is
 noted in the breakdown output so it's never silently misleading.
+
+## Revision: overdue-monitoring override (found during w4 testing)
+
+Testing revealed a tree with 3 missed expected check-ins could still
+score LOW/Healthy if its single logged reading was healthy - masking
+a genuine monitoring gap the same way the earlier decline-masking bug
+did. A second override was added, consistent with the decline override:
+
+If missing >= 3 (per the w4 calculation) and the bucket would
+otherwise be LOW, floor it at MEDIUM. A sparse monitoring history
+should never present as confidently healthy - the system should have
+enough data before declaring "no action needed."
