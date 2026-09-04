@@ -35,3 +35,7 @@ backend/*.png
 # pytest test database
 backend/test_treepassport.db
 backend/.pytest_cache/
+
+# Uploaded photos (user content, not source) - keep the directory via .gitkeep
+backend/uploads/*
+!backend/uploads/.gitkeep

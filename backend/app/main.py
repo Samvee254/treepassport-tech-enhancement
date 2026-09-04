@@ -1,7 +1,8 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
-from app.routers import trees, monitoring, risk, audit, auth, reports, qr, species
+from app.routers import trees, monitoring, risk, audit, auth, reports, qr, species, photos
 
 Base.metadata.create_all(bind=engine)
 
@@ -22,6 +23,8 @@ app.include_router(audit.router)
 app.include_router(reports.router)
 app.include_router(qr.router)
 app.include_router(species.router)
+app.include_router(photos.router)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.get("/health")
