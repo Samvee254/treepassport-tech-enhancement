@@ -107,14 +107,16 @@ function renderTrees(trees) {
       fillOpacity: 0.9
     }).addTo(map);
 
-    marker.bindPopup(`
+    marker.bindPopup(`<div id="popup-${tree.id}">
       <strong>${tree.tree_code}</strong><br>
       County: ${tree.county || 'Unknown'}<br>
       Status: ${tree.verification_status}<br>
       Health: ${tree.current_health_status}<br>
       <a href="#" onclick="showRisk(${tree.id}); return false;">View risk score</a><br>
       <a href="${API_BASE}/trees/${tree.id}/qr" target="_blank">View QR tag</a>
-    `);
+    </div>`);
+
+    marker.on('popupopen', () => loadLatestPhoto(tree.id));
 
     markers.push(marker);
     bounds.push([tree.gps_lat, tree.gps_lng]);
@@ -185,6 +187,36 @@ async function showRisk(treeId) {
     `Tree ${risk.tree_code}\nRisk Score: ${risk.score} (${risk.bucket})\n` +
     `Label: ${risk.label}\nRecommendation: ${risk.recommendation}`
   );
+}
+
+async function loadLatestPhoto(treeId) {
+  try {
+    const res = await fetch(`${API_BASE}/trees/${treeId}/monitoring`);
+    const records = await res.json();
+
+    const withPhoto = records.filter(r => r.photo_url).slice(-1)[0];
+    const container = document.getElementById(`popup-${treeId}`);
+    if (!container) return;
+
+    if (withPhoto) {
+      const img = document.createElement('img');
+      img.src = `${API_BASE}${withPhoto.photo_url}`;
+      img.style.width = '150px';
+      img.style.marginTop = '6px';
+      img.style.borderRadius = '4px';
+      container.appendChild(document.createElement('br'));
+      container.appendChild(img);
+    } else {
+      const note = document.createElement('div');
+      note.style.fontSize = '12px';
+      note.style.color = '#888';
+      note.style.marginTop = '6px';
+      note.textContent = 'No photo on record';
+      container.appendChild(note);
+    }
+  } catch (err) {
+    console.error('Failed to load photo for tree', treeId, err);
+  }
 }
 
 loadTrees();
