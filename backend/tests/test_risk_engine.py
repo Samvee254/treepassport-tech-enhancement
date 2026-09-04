@@ -48,3 +48,52 @@ def test_health_decline_forces_at_least_medium(client, field_officer_token):
     # regression test for the bucket-masking bug found during manual testing
     assert data["bucket"] in ("MEDIUM", "HIGH")
     assert data["breakdown"]["health_status"]["declined_since_previous"] is True
+
+
+def test_missing_checkins_calculated_correctly(client, field_officer_token):
+    headers = {"Authorization": f"Bearer {field_officer_token}"}
+    res = client.post(
+        "/trees",
+        json={
+            "tree_code": "TP-RISK-W4-001",
+            "planting_date": "2026-01-01T00:00:00",
+        },
+        headers=headers,
+    )
+    tree_id = res.json()["id"]
+    client.post(
+        f"/trees/{tree_id}/monitoring",
+        json={"height_cm": 20, "health_status": "healthy"},
+        headers=headers,
+    )
+
+    res = client.get(f"/trees/{tree_id}/risk")
+    data = res.json()
+    mc = data["breakdown"]["missing_checkins"]
+    assert mc["actual_checkins"] == 1
+    assert mc["expected_checkins"] > mc["actual_checkins"]
+    assert mc["missing"] > 0
+
+
+def test_overdue_monitoring_forces_at_least_medium(client, field_officer_token):
+    headers = {"Authorization": f"Bearer {field_officer_token}"}
+    res = client.post(
+        "/trees",
+        json={
+            "tree_code": "TP-RISK-W4-002",
+            "planting_date": "2026-01-01T00:00:00",
+        },
+        headers=headers,
+    )
+    tree_id = res.json()["id"]
+    client.post(
+        f"/trees/{tree_id}/monitoring",
+        json={"height_cm": 20, "health_status": "healthy"},
+        headers=headers,
+    )
+
+    res = client.get(f"/trees/{tree_id}/risk")
+    data = res.json()
+    # regression test for the overdue-monitoring bucket-masking bug
+    assert data["breakdown"]["missing_checkins"]["missing"] >= 3
+    assert data["bucket"] in ("MEDIUM", "HIGH")

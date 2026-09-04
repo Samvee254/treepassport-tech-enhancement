@@ -65,10 +65,33 @@ def compute_risk(tree: models.Tree, records: list[models.MonitoringRecord]) -> d
         "points": w3,
     }
 
-    # w4: missing check-ins (simple placeholder: not enough data to compute
-    # a real cadence yet, so 0 until we define expected check-in frequency)
+    # w4: missing check-ins, per 06-risk-engine.md (30-day expected cadence)
     w4 = 0
-    breakdown["missing_checkins"] = {"points": w4}
+    if tree.planting_date:
+        days_since_planting = (
+            datetime.now(timezone.utc) - tree.planting_date.replace(tzinfo=timezone.utc)
+        ).days
+        expected_checkins = days_since_planting // 30
+        missing = max(expected_checkins - len(records), 0)
+
+        if missing == 0:
+            w4 = 0
+        elif missing == 1:
+            w4 = 10
+        else:
+            w4 = 15
+
+        breakdown["missing_checkins"] = {
+            "expected_checkins": expected_checkins,
+            "actual_checkins": len(records),
+            "missing": missing,
+            "points": w4,
+        }
+    else:
+        breakdown["missing_checkins"] = {
+            "points": 0,
+            "note": "no planting_date recorded - cannot calculate expected cadence",
+        }
 
     score = min(w1 + w2 + w3 + w4, 100)
 
@@ -82,6 +105,12 @@ def compute_risk(tree: models.Tree, records: list[models.MonitoringRecord]) -> d
     # Decline override: an active health decline should never be masked
     # by a low raw score (see 06-risk-engine.md revision notes)
     if declined and bucket == "LOW":
+        bucket, label = "MEDIUM", "Watch"
+
+    # Overdue-monitoring override: a sparse check-in history should never
+    # present as confidently healthy (see 06-risk-engine.md revision notes)
+    missing_count = breakdown.get("missing_checkins", {}).get("missing", 0)
+    if missing_count >= 3 and bucket == "LOW":
         bucket, label = "MEDIUM", "Watch"
 
     recommendation = (
